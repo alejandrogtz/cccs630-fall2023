@@ -65,14 +65,14 @@ class Cell2D:
         plt.figure()
         try:
             for i in range(frames-1):
-                #self.draw()
-                #plt.show()
+                self.draw()
+                plt.show()
                 if interval:
                     sleep(interval)
                 step()
-                #clear_output(wait=True)
-            #self.draw()
-            #plt.show()
+                clear_output(wait=True)
+            self.draw()
+            plt.show()
         except KeyboardInterrupt:
             pass
         
