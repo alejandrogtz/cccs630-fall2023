@@ -5,7 +5,6 @@ Translated using PySD
 
 from pathlib import Path
 import numpy as np
-from scipy import stats
 
 from pysd.py_backend.statefuls import Integ
 from pysd import Component
@@ -98,40 +97,42 @@ def time_step():
 #######################################################################
 
 
-@component.add(name="Random Seed", comp_type="Constant", comp_subtype="Normal")
-def random_seed():
+@component.add(name="Initial investment", comp_type="Constant", comp_subtype="Normal")
+def initial_investment():
     return 10000
 
 
 @component.add(
-    name="Interest rate",
-    comp_type="Auxiliary",
-    comp_subtype="Normal",
-    depends_on={"random_seed": 1, "time": 1},
-)
-def interest_rate():
-    return stats.truncnorm.rvs(-0.9, 0.9, loc=0.0778, scale=0.191, size=())
-
-
-@component.add(
-    name="Interests",
-    comp_type="Auxiliary",
-    comp_subtype="Normal",
-    depends_on={"interest_rate": 1, "savings": 1},
-)
-def interests():
-    return interest_rate() * savings()
-
-
-@component.add(
-    name="Savings",
+    name="Investment",
     comp_type="Stateful",
     comp_subtype="Integ",
-    depends_on={"_integ_savings": 1},
-    other_deps={"_integ_savings": {"initial": {}, "step": {"interests": 1}}},
+    depends_on={"_integ_investment": 1},
+    other_deps={
+        "_integ_investment": {
+            "initial": {"initial_investment": 1},
+            "step": {"returns": 1},
+        }
+    },
 )
-def savings():
-    return _integ_savings()
+def investment():
+    return _integ_investment()
 
 
-_integ_savings = Integ(lambda: interests(), lambda: 10000, "_integ_savings")
+_integ_investment = Integ(
+    lambda: returns(), lambda: initial_investment(), "_integ_investment"
+)
+
+
+@component.add(name="Return rate", comp_type="Constant", comp_subtype="Normal")
+def return_rate():
+    return 0.07
+
+
+@component.add(
+    name="Returns",
+    comp_type="Auxiliary",
+    comp_subtype="Normal",
+    depends_on={"return_rate": 1, "investment": 1},
+)
+def returns():
+    return return_rate() * investment()
